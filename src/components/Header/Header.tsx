@@ -16,6 +16,7 @@ import Router, { usePathname, useRouter } from "next/navigation";
 
 import SearchComponent from "./SearchComponent";
 import Image from "next/image";
+import ConnectWallet from "../ConnectWallet";
 
 interface Category {
   id: number;
@@ -201,6 +202,8 @@ const Header = () => {
         >
           Sell Your Art
         </button>
+
+        <ConnectWallet/>
 
         <a
           className="hidden md:flex  du-btn du-btn-md du-btn-ghost my-auto items-center justify-center font-heading1 text-lg"
