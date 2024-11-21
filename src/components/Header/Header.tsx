@@ -151,8 +151,9 @@ const Header = () => {
 
 	return (
 		<div
-			className={`${active ? "block" : "hidden"
-				} w-full h-[50px] md:h-[80px]  flex justify-between  z-20 fixed bg-white top-0 transition-all duration-500  px-5`}
+			className={`${
+				active ? "block" : "hidden"
+			} w-full h-[50px] md:h-[80px]  flex justify-between  z-20 fixed bg-black top-0 transition-all duration-500  px-5`}
 		>
 			{/* <div
     className={`bg-red-w-full flex justify-between`}
@@ -179,9 +180,9 @@ const Header = () => {
 				</Link>
 			</div>
 
-			<div className="flex items-center w-[100px] lg:w-[600px] ">
+			{/* <div className="flex items-center w-[100px] lg:w-[600px] ">
 				<SearchComponent />
-			</div>
+			</div> */}
 			{mobileMenu && (
 				<div>
 					<MenuMobile
@@ -193,7 +194,7 @@ const Header = () => {
 				</div>
 			)}
 
-			<div className="flex items-center gap-1   ">
+			<div className="flex items-center gap-1  justify-end w-full ">
 				{/* {Button } */}
 				{/* <button
 					className="hidden md:block text-accent du-btn du-btn-primary text-black font-heading1 lg:text-xl text-sm text-nowrap shadow-md "
@@ -217,7 +218,8 @@ const Header = () => {
 				</a>
 				<Link href={"user"}>
 					<p className="hidden md:flex  du-btn du-btn-md du-btn-ghost my-auto items-center justify-center font-heading1 text-lg">
-						Your Profile<DashboardIcon width={18} />
+						Your Profile
+						<DashboardIcon width={18} />
 					</p>
 				</Link>
 

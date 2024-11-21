@@ -51,7 +51,7 @@ const config = {
 				border: "var(--border)",
 				input: "#787878",
 				ring: "#ff7d04",
-				background: "#ffffff",
+				background: "#000000",
 				secondaryBackground: "#292929",
 				foreground: "var(--foreground)",
 				primary: {
