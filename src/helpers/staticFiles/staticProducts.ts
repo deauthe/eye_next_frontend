@@ -1,7 +1,9 @@
-export const staticProducts = [
+import { ProductCardProps, UpdatedProductCardProps } from "@/types/types";
+
+export const staticProducts: UpdatedProductCardProps[] = [
 	{
-		product_id: "12341241234",
-		name: "buhahahah",
+		productId: "12341241234",
+		category: "buhahahah",
 		designer_name: "deauth",
 		designer_id: "61239803412984",
 		colours: ["blue", "gray", "red"],

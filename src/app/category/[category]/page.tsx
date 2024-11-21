@@ -1,6 +1,6 @@
 "use client";
 import { staticProducts } from "@/helpers/staticFiles/staticProducts";
-import ProductCard from "@/components/mainComponents/ProductCard";
+import { ProductCard } from "@/components/mainComponents/ProductCard";
 import { Button } from "@/components/ui/button";
 import HeroBanner from "@/components/Home/HeroBanner";
 import { PageType, ProductCardProps } from "@/types/types";
