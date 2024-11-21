@@ -151,9 +151,8 @@ const Header = () => {
 
 	return (
 		<div
-			className={`${
-				active ? "block" : "hidden"
-			} w-full h-[50px] md:h-[80px]  flex justify-between  z-20 fixed bg-white top-0 transition-all duration-500  px-5`}
+			className={`${active ? "block" : "hidden"
+				} w-full h-[50px] md:h-[80px]  flex justify-between  z-20 fixed bg-white top-0 transition-all duration-500  px-5`}
 		>
 			{/* <div
     className={`bg-red-w-full flex justify-between`}
@@ -196,12 +195,12 @@ const Header = () => {
 
 			<div className="flex items-center gap-1   ">
 				{/* {Button } */}
-				<button
+				{/* <button
 					className="hidden md:block text-accent du-btn du-btn-primary text-black font-heading1 lg:text-xl text-sm text-nowrap shadow-md "
 					onClick={handleSellArtButton}
 				>
 					Sell Your Art
-				</button>
+				</button> */}
 
 				<a
 					className="hidden md:flex  du-btn du-btn-md du-btn-ghost my-auto items-center justify-center font-heading1 text-lg"
@@ -216,9 +215,9 @@ const Header = () => {
 				>
 					Sign Up
 				</a>
-				<Link href={"profile/DesignerDashboard"}>
+				<Link href={"user"}>
 					<p className="hidden md:flex  du-btn du-btn-md du-btn-ghost my-auto items-center justify-center font-heading1 text-lg">
-						Dashboard <DashboardIcon width={18} />
+						Your Profile<DashboardIcon width={18} />
 					</p>
 				</Link>
 
@@ -285,13 +284,13 @@ const Header = () => {
 								</p>
 							</button>
 						</li>
-						<li>
+						{/* <li>
 							<button onClick={handleLogOut}>
 								<p className="block  flex gap-2 items-center px-4 py-2 text-gray-800 hover:bg-gray-200">
 									Dashboard <DashboardIcon />
 								</p>
 							</button>
-						</li>
+						</li> */}
 					</ul>
 				)}
 			</div>

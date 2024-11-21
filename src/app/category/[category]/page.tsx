@@ -13,7 +13,7 @@ export default function Page({ params }: { params: { category: string } }) {
 		totalPages: 10,
 	});
 	const [products, setProducts] = useState<ProductCardProps>();
-	const loadMoreProducts = () => {};
+	const loadMoreProducts = () => { };
 
 	return (
 		<div>
