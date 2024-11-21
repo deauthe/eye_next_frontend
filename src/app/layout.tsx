@@ -28,9 +28,9 @@ export default function RootLayout({
 					<Header />
 					<div className=" bg-background">
 						<Suspense fallback={<Loading />}>{children}</Suspense>
+						<Toaster />
+						<Footer />
 					</div>
-					<Toaster />
-					<Footer />
 				</Providers>
 
 				{/* </Provider> */}
