@@ -73,7 +73,7 @@ const initialState: EditorState = {
 
 export const useEditor = create<EditorStore>()(
   devtools(
-    immer((set, get) => ({
+    immer((set) => ({
       ...initialState,
 
       // View Management

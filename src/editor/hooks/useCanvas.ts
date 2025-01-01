@@ -113,6 +113,7 @@ export const useCanvas = () => {
   const mockupRef = useRef<fabric.Image | null>(null);
   const designRefsMap = useRef<Map<string, fabric.Image>>(new Map());
   const isInitializedRef = useRef(false);
+  const isModifyingRef = useRef(false);
   const previousViewRef = useRef<ViewType | null>(null);
 
   const {
@@ -122,153 +123,8 @@ export const useCanvas = () => {
     garmentColor,
     garmentType,
     updateDesignTransform,
+    setActiveDesign,
   } = useEditor();
-
-  // Initialize canvas
-  const initCanvas = (htmlCanvas: HTMLCanvasElement) => {
-    if (canvasRef.current || !htmlCanvas) return;
-
-    const canvas = new fabric.Canvas(htmlCanvas, {
-      width: 600,
-      height: 800,
-      backgroundColor: "#f5f5f5",
-    });
-
-    canvasRef.current = canvas;
-    isInitializedRef.current = true;
-    previousViewRef.current = activeView;
-
-    // Load initial mockup only after canvas is initialized
-    loadMockup(activeView, garmentType);
-  };
-
-  // Save design states before view change
-  const saveDesignStates = () => {
-    if (!canvasRef.current || !previousViewRef.current) return;
-
-    designRefsMap.current.forEach((fabricObj, designId) => {
-      const transform = {
-        position: {
-          x: fabricObj.left || 0,
-          y: fabricObj.top || 0,
-        },
-        scale: fabricObj.scaleX || 1,
-        rotation: fabricObj.angle || 0,
-      };
-
-      // Save the current transform state
-      updateDesignTransform(designId, transform);
-    });
-  };
-
-  // Handle view changes
-  useEffect(() => {
-    if (previousViewRef.current && previousViewRef.current !== activeView) {
-      // Save states of current view before switching
-      saveDesignStates();
-
-      // Update previous view reference
-      previousViewRef.current = activeView;
-
-      // Clear current design refs as we're switching views
-      designRefsMap.current.clear();
-
-      // Load new view
-      if (canvasRef.current) {
-        loadMockup(activeView, garmentType);
-      }
-    }
-  }, [activeView]);
-
-  // Load mockup image with safety checks
-  const loadMockup = (view: ViewType, type: string) => {
-    if (!canvasRef.current || !isInitializedRef.current) return;
-
-    const canvas = canvasRef.current;
-
-    fabric.Image.fromURL(MOCKUP_IMAGES[type][view], (img) => {
-      if (!canvas || !isInitializedRef.current) return;
-
-      // Remove existing mockup if it exists
-      if (mockupRef.current) {
-        canvas.remove(mockupRef.current);
-        mockupRef.current = null;
-      }
-
-      mockupRef.current = img;
-
-      // Set mockup properties
-      img.set({
-        selectable: false,
-        evented: false,
-        left: 0,
-        top: 0,
-        scaleX: canvas.width! / img.width!,
-        scaleY: canvas.height! / img.height!,
-      });
-
-      // Apply garment color
-      applyGarmentColor(img, garmentColor);
-
-      // Safely clear and update canvas
-      try {
-        canvas.clear();
-        canvas.add(img);
-        img.moveTo(0);
-
-        // Re-add all designs for the current view
-        const currentDesigns = designsByView[activeView];
-        currentDesigns.forEach((design) => {
-          const designObject = designRefsMap.current.get(design.id);
-          if (designObject) {
-            canvas.add(designObject);
-            if (design.id === activeDesignId) {
-              canvas.setActiveObject(designObject);
-            }
-          }
-        });
-
-        canvas.renderAll();
-      } catch (error) {
-        console.error("Error updating canvas:", error);
-      }
-    });
-  };
-
-  // Load designs for current view
-  const loadDesignsForView = (canvas: fabric.Canvas) => {
-    const currentDesigns = designsByView[activeView];
-
-    // Clear existing designs
-    designRefsMap.current.forEach((fabricObj) => {
-      canvas.remove(fabricObj);
-    });
-    designRefsMap.current.clear();
-
-    // Load designs for current view
-    currentDesigns.forEach((design) => {
-      fabric.Image.fromURL(design.imageUrl, (img) => {
-        if (!canvas || !isInitializedRef.current) return;
-
-        img.set({
-          left: design.transform.position.x,
-          top: design.transform.position.y,
-          scaleX: design.transform.scale,
-          scaleY: design.transform.scale,
-          angle: design.transform.rotation,
-          originX: "center",
-          originY: "center",
-        });
-
-        designRefsMap.current.set(design.id, img);
-        canvas.add(img);
-
-        if (design.id === activeDesignId) {
-          canvas.setActiveObject(img);
-        }
-      });
-    });
-  };
 
   // Helper function to determine color brightness
   const getBrightness = (color: string): number => {
@@ -300,120 +156,280 @@ export const useCanvas = () => {
 
     mockup.applyFilters();
   };
-  // Handle design updates
-  useEffect(() => {
-    if (!canvasRef.current || !isInitializedRef.current) return;
 
-    const canvas = canvasRef.current;
-    const currentDesigns = designsByView[activeView];
+  const handleObjectModification = (obj: fabric.Image) => {
+    if (!obj || isModifyingRef.current) return;
 
-    // Update or add designs
-    currentDesigns.forEach((design) => {
-      const existingObject = designRefsMap.current.get(design.id);
-
-      if (existingObject) {
-        // Update existing design
-        existingObject.set({
-          left: design.transform.position.x,
-          top: design.transform.position.y,
-          scaleX: design.transform.scale,
-          scaleY: design.transform.scale,
-          angle: design.transform.rotation,
-          originX: "center",
-          originY: "center",
-        });
-      } else {
-        // Load new design
-        fabric.Image.fromURL(design.imageUrl, (img) => {
-          if (!canvas || !isInitializedRef.current) return;
-
-          img.set({
-            left: design.transform.position.x,
-            top: design.transform.position.y,
-            scaleX: design.transform.scale,
-            scaleY: design.transform.scale,
-            angle: design.transform.rotation,
-            originX: "center",
-            originY: "center",
-          });
-
-          designRefsMap.current.set(design.id, img);
-          canvas.add(img);
-
-          if (design.id === activeDesignId) {
-            canvas.setActiveObject(img);
-          }
-        });
-      }
+    let designId: string | null = null;
+    designRefsMap.current.forEach((fabricObj, id) => {
+      if (fabricObj === obj) designId = id;
     });
 
-    canvas.renderAll();
-  }, [designsByView, activeView]);
+    if (!designId) return;
 
-  // Handle object modifications
-  useEffect(() => {
-    if (!canvasRef.current || !isInitializedRef.current) return;
-
-    const canvas = canvasRef.current;
-
-    const handleObjectModified = (e: fabric.IEvent) => {
-      const obj = e.target;
-      if (!obj) return;
-
-      // Find the corresponding design ID
-      let modifiedDesignId: string | null = null;
-      designRefsMap.current.forEach((fabricObj, designId) => {
-        if (fabricObj === obj) {
-          modifiedDesignId = designId;
-        }
-      });
-
-      if (!modifiedDesignId) return;
-
-      const updatedTransform = {
+    isModifyingRef.current = true;
+    try {
+      updateDesignTransform(designId, {
         position: {
           x: obj.left || 0,
           y: obj.top || 0,
         },
         scale: obj.scaleX || 1,
         rotation: obj.angle || 0,
-      };
+      });
+    } finally {
+      isModifyingRef.current = false;
+    }
+  };
 
-      updateDesignTransform(modifiedDesignId, updatedTransform);
+  const setupCanvasEventHandlers = (canvas: fabric.Canvas) => {
+    // Selection events
+    canvas.on("selection:created", (e) => {
+      if (isModifyingRef.current) return;
+      const selectedObject = e.selected?.[0];
+      if (selectedObject) {
+        designRefsMap.current.forEach((fabricObj, designId) => {
+          if (fabricObj === selectedObject) {
+            setActiveDesign(designId);
+          }
+        });
+      }
+    });
+
+    canvas.on("selection:cleared", () => {
+      if (!isModifyingRef.current) {
+        setActiveDesign(null);
+      }
+    });
+
+    // Object modification events
+    canvas.on("object:modified", (e) => {
+      const obj = e.target as fabric.Image;
+      handleObjectModification(obj);
+    });
+
+    // Real-time transform events
+    const handleTransform = (e: fabric.IEvent) => {
+      const obj = e.target as fabric.Image;
+      if (obj) {
+        handleObjectModification(obj);
+      }
     };
 
-    // Add event listeners
-    canvas.on("object:modified", handleObjectModified);
-    canvas.on("object:moving", handleObjectModified);
-    canvas.on("object:scaling", handleObjectModified);
-    canvas.on("object:rotating", handleObjectModified);
+    canvas.on("object:scaling", handleTransform);
+    canvas.on("object:rotating", handleTransform);
+    canvas.on("object:moving", handleTransform);
+  };
 
-    return () => {
-      canvas.off("object:modified", handleObjectModified);
-      canvas.off("object:moving", handleObjectModified);
-      canvas.off("object:scaling", handleObjectModified);
-      canvas.off("object:rotating", handleObjectModified);
-    };
-  }, [updateDesignTransform]);
+  const updateCanvasObjects = () => {
+    if (
+      !canvasRef.current ||
+      !isInitializedRef.current ||
+      isModifyingRef.current
+    )
+      return;
 
-  // Enhanced cleanup
+    const canvas = canvasRef.current;
+    const currentDesigns = designsByView[activeView];
+
+    isModifyingRef.current = true;
+    try {
+      // Remove deleted designs
+      const designIdsInStore = new Set(currentDesigns.map((d) => d.id));
+      const objectsToRemove: fabric.Image[] = [];
+
+      designRefsMap.current.forEach((fabricObj, designId) => {
+        if (!designIdsInStore.has(designId)) {
+          objectsToRemove.push(fabricObj);
+          designRefsMap.current.delete(designId);
+        }
+      });
+
+      objectsToRemove.forEach((obj) => {
+        canvas.remove(obj);
+      });
+
+      // Update existing designs and add new ones
+      currentDesigns.forEach((design) => {
+        const existingObject = designRefsMap.current.get(design.id);
+
+        if (existingObject) {
+          if (
+            existingObject.left !== design.transform.position.x ||
+            existingObject.top !== design.transform.position.y ||
+            existingObject.scaleX !== design.transform.scale ||
+            existingObject.angle !== design.transform.rotation
+          ) {
+            existingObject.set({
+              left: design.transform.position.x,
+              top: design.transform.position.y,
+              scaleX: design.transform.scale,
+              scaleY: design.transform.scale,
+              angle: design.transform.rotation,
+              originX: "center",
+              originY: "center",
+            });
+            existingObject.setCoords();
+          }
+        } else {
+          fabric.Image.fromURL(design.imageUrl, (img) => {
+            if (!canvas || !isInitializedRef.current) return;
+
+            img.set({
+              left: design.transform.position.x,
+              top: design.transform.position.y,
+              scaleX: design.transform.scale,
+              scaleY: design.transform.scale,
+              angle: design.transform.rotation,
+              originX: "center",
+              originY: "center",
+            });
+
+            designRefsMap.current.set(design.id, img);
+            canvas.add(img);
+
+            if (design.id === activeDesignId) {
+              canvas.setActiveObject(img);
+            }
+
+            img.setCoords();
+          });
+        }
+      });
+
+      canvas.renderAll();
+    } finally {
+      isModifyingRef.current = false;
+    }
+  };
+  const loadMockup = (view: ViewType, type: string) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !isInitializedRef.current) return;
+
+    fabric.Image.fromURL(MOCKUP_IMAGES[type][view], (img) => {
+      if (!canvas || !isInitializedRef.current) return;
+
+      try {
+        // Safely remove old mockup
+        if (mockupRef.current) {
+          canvas.remove(mockupRef.current);
+          mockupRef.current = null;
+        }
+
+        // Setup new mockup
+        mockupRef.current = img;
+        img.set({
+          selectable: false,
+          evented: false,
+          left: 0,
+          top: 0,
+          scaleX: canvas.width! / img.width!,
+          scaleY: canvas.height! / img.height!,
+        });
+
+        applyGarmentColor(img, garmentColor);
+
+        // Safely update canvas
+        const objects = [...canvas.getObjects()];
+        objects.forEach((obj) => canvas.remove(obj));
+
+        canvas.add(img);
+        img.moveTo(0);
+
+        // Re-add all designs
+        designsByView[activeView].forEach((design) => {
+          const designObject = designRefsMap.current.get(design.id);
+          if (designObject) {
+            canvas.add(designObject);
+            if (design.id === activeDesignId) {
+              canvas.setActiveObject(designObject);
+            }
+          }
+        });
+
+        canvas.renderAll();
+      } catch (error) {
+        console.error("Error updating mockup:", error);
+      }
+    });
+  };
+
+  // Initialize canvas
+  const initCanvas = (htmlCanvas: HTMLCanvasElement) => {
+    if (canvasRef.current || !htmlCanvas) return;
+
+    try {
+      const canvas = new fabric.Canvas(htmlCanvas, {
+        width: 600,
+        height: 800,
+        backgroundColor: "#f5f5f5",
+      });
+
+      canvasRef.current = canvas;
+      isInitializedRef.current = true;
+      previousViewRef.current = activeView;
+
+      setupCanvasEventHandlers(canvas);
+      loadMockup(activeView, garmentType);
+    } catch (error) {
+      console.error("Error initializing canvas:", error);
+    }
+  };
+
+  // Effects
+
+  // Handle view changes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || previousViewRef.current === activeView) return;
+
+    try {
+      // Save the new view reference first
+      previousViewRef.current = activeView;
+
+      // Clear design refs for new view
+      designRefsMap.current = new Map();
+
+      // Load the new mockup
+      loadMockup(activeView, garmentType);
+    } catch (error) {
+      console.error("Error switching views:", error);
+    }
+  }, [activeView, garmentType]);
+
+  // Sync designs
+  useEffect(() => {
+    if (!isModifyingRef.current) {
+      try {
+        updateCanvasObjects();
+      } catch (error) {
+        console.error("Error updating canvas objects:", error);
+      }
+    }
+  }, [designsByView, activeView]);
+
+  // Cleanup
   useEffect(() => {
     return () => {
-      if (canvasRef.current) {
-        saveDesignStates(); // Save states before unmounting
+      const canvas = canvasRef.current;
+      if (canvas) {
         try {
-          canvasRef.current.dispose();
+          canvas.getObjects().forEach((obj) => canvas.remove(obj));
+          canvas.dispose();
+          canvasRef.current = null;
+          mockupRef.current = null;
+          designRefsMap.current.clear();
+          isInitializedRef.current = false;
         } catch (error) {
-          console.error("Error disposing canvas:", error);
+          console.error("Error cleaning up canvas:", error);
         }
-        canvasRef.current = null;
       }
-      mockupRef.current = null;
-      designRefsMap.current.clear();
-      isInitializedRef.current = false;
-      previousViewRef.current = null;
     };
   }, []);
 
-  return { initCanvas, canvasRef };
+  return {
+    initCanvas,
+    cleanupCanvas: () => {},
+    canvasRef,
+  };
 };

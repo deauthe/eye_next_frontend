@@ -5,12 +5,27 @@ import { useCanvas } from '../../hooks/useCanvas';
 
 export const Canvas: React.FC = () => {
     const canvasElRef = useRef<HTMLCanvasElement>(null);
-    const { initCanvas } = useCanvas();
+    const { initCanvas, cleanupCanvas } = useCanvas();
 
     useEffect(() => {
+        let canvas: HTMLCanvasElement | null = null;
+
         if (canvasElRef.current) {
-            initCanvas(canvasElRef.current);
+            canvas = canvasElRef.current;
+            initCanvas(canvas);
         }
+
+        // Cleanup function
+        return () => {
+            if (canvas) {
+                cleanupCanvas();
+                // Make sure the canvas element is empty
+                const context = canvas.getContext('2d');
+                if (context) {
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+        };
     }, []);
 
     return (

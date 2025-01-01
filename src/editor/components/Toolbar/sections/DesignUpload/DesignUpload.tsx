@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useEditor } from "../../../../store/editorStore";
-import { useEditorHistory } from '../../../../hooks/useEditorHistory';
-import { AddDesignCommand } from '../../../../commands/designCommands';
 import { validateDesignSize } from '../../../../utils/validation';
 import { calculateInitialScale, getImageDimensions } from '../../../../utils/designScaling';
 import { DESIGN_AREAS } from '../../../../hooks/useCanvas';
@@ -23,7 +21,6 @@ export const DesignUpload: React.FC = () => {
         designsByView
     } = useEditor();
 
-    const { addCommand } = useEditorHistory();
     const { toast } = useToast();
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -43,13 +40,8 @@ export const DesignUpload: React.FC = () => {
             reader.onload = async () => {
                 const imageUrl = reader.result as string;
                 try {
-                    // Get image dimensions
                     const dimensions = await getImageDimensions(imageUrl);
-
-                    // Get design area for current view
                     const designArea = DESIGN_AREAS[garmentType][activeView];
-
-                    // Calculate initial scale
                     const initialScale = calculateInitialScale(
                         dimensions.width,
                         dimensions.height,
@@ -57,9 +49,8 @@ export const DesignUpload: React.FC = () => {
                         designArea.maxHeight
                     );
 
-                    // Calculate position with offset for multiple designs
                     const currentDesigns = designsByView[activeView];
-                    const positionOffset = currentDesigns.length * 20; // Offset each new design by 20px
+                    const positionOffset = currentDesigns.length * 20;
 
                     const newDesign: Design = {
                         id: nanoid(),
@@ -75,8 +66,7 @@ export const DesignUpload: React.FC = () => {
                         originalSize: dimensions
                     };
 
-                    const command = new AddDesignCommand(newDesign, addDesign);
-                    addCommand(command);
+                    addDesign(newDesign);
 
                     toast({
                         title: "Design Added",
@@ -94,7 +84,7 @@ export const DesignUpload: React.FC = () => {
             };
             reader.readAsDataURL(file);
         }
-    }, [addDesign, addCommand, toast, activeView, garmentType, designsByView]);
+    }, [addDesign, toast, activeView, garmentType, designsByView]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,

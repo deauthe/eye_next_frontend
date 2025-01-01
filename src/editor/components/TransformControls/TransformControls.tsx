@@ -5,43 +5,50 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEditor } from "../../store/editorStore";
-import { useEditorHistory } from '../../hooks/useEditorHistory';
-import { TransformCommand } from '../../commands/designCommands';
-import { UndoRedoControls } from '../UndoRedoControls/UndoRedoControls';
 
 export const TransformControls: React.FC = () => {
-    const { design, updateDesignTransform } = useEditor();
-    const { addCommand } = useEditorHistory();
+    const {
+        activeDesignId,
+        designsByView,
+        activeView,
+        updateDesignTransform
+    } = useEditor();
 
-    if (!design) return null;
+    // Get the active design
+    const design = activeDesignId
+        ? designsByView[activeView].find(d => d.id === activeDesignId)
+        : null;
+
+    if (!design) {
+        return (
+            <div className="space-y-4">
+                <div className="text-center text-sm text-muted-foreground p-4">
+                    Select a design to transform
+                </div>
+            </div>
+        );
+    }
 
     const handleScaleChange = (value: number[]) => {
-        const command = new TransformCommand(
-            design,
-            updateDesignTransform,
-            { scale: value[0] / 100 }
-        );
-        addCommand(command);
+        updateDesignTransform(design.id, {
+            scale: value[0] / 100
+        });
     };
 
     const handleRotationChange = (value: number[]) => {
-        const command = new TransformCommand(
-            design,
-            updateDesignTransform,
-            { rotation: value[0] }
-        );
-        addCommand(command);
+        updateDesignTransform(design.id, {
+            rotation: value[0]
+        });
     };
 
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <Label>Transform Controls</Label>
-                <UndoRedoControls />
             </div>
 
             <div className="space-y-2">
-                <Label>Scale</Label>
+                <Label>Scale ({Math.round(design.transform.scale * 100)}%)</Label>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
@@ -70,18 +77,13 @@ export const TransformControls: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-                <Label>Rotation</Label>
+                <Label>Rotation ({Math.round(design.transform.rotation)}°)</Label>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         size="icon"
                         onClick={() => {
-                            const command = new TransformCommand(
-                                design,
-                                updateDesignTransform,
-                                { rotation: 0 }
-                            );
-                            addCommand(command);
+                            updateDesignTransform(design.id, { rotation: 0 });
                         }}
                     >
                         <RotateCcw className="h-4 w-4" />

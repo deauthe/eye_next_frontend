@@ -2,9 +2,8 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Eye, EyeOff, Trash2, Move } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { useEditor } from '../../store/editorStore';
-import { Design } from '../../types/editor.types';
 
 export const DesignsPanel: React.FC = () => {
     const {
@@ -19,6 +18,17 @@ export const DesignsPanel: React.FC = () => {
 
     const handleRemoveDesign = (designId: string) => {
         removeDesign(designId);
+        if (activeDesignId === designId) {
+            // If we're removing the active design, clear the selection or select another design
+            if (designs.length > 1) {
+                const nextDesign = designs.find(d => d.id !== designId);
+                if (nextDesign) {
+                    setActiveDesign(nextDesign.id);
+                }
+            } else {
+                setActiveDesign(null);
+            }
+        }
     };
 
     return (
@@ -38,6 +48,7 @@ export const DesignsPanel: React.FC = () => {
                             className={`
                                 p-3 rounded-lg border-2 cursor-pointer
                                 ${activeDesignId === design.id ? 'border-primary' : 'border-border'}
+                                transition-all duration-200 hover:bg-accent/50
                             `}
                             onClick={() => setActiveDesign(design.id)}
                         >
