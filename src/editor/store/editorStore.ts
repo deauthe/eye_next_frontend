@@ -11,6 +11,7 @@ import {
   Design,
   Position,
   DesignsByView,
+  BlendMode,
 } from "../types/editor.types";
 
 // Separate interface for actions
@@ -46,6 +47,25 @@ interface EditorActions {
   duplicateDesign: (designId: string) => void;
   clearDesigns: () => void;
   moveDesignToView: (designId: string, targetView: ViewType) => void;
+
+  // Layer Operations
+
+  updateDesignProperties: (
+    designId: string,
+    properties: Partial<Design>
+  ) => void;
+
+  reorderDesigns: (view: ViewType, newOrder: Design[]) => void;
+
+  updateDesignZIndex: (designId: string, newIndex: number) => void;
+
+  updateDesignBlendMode: (designId: string, blendMode: BlendMode) => void;
+
+  updateDesignOpacity: (designId: string, opacity: number) => void;
+
+  toggleDesignVisibility: (designId: string) => void;
+
+  toggleDesignLock: (designId: string) => void;
 }
 
 // Combine state and actions
@@ -331,6 +351,104 @@ export const useEditor = create<EditorStore>()(
           },
           false,
           "moveDesignToView"
+        ),
+
+      updateDesignProperties: (designId, properties) =>
+        set(
+          (state) => {
+            const design = state.designsByView[state.activeView].find(
+              (d) => d.id === designId
+            );
+            if (design) {
+              Object.assign(design, properties);
+            }
+          },
+          false,
+          "updateDesignProperties"
+        ),
+
+      reorderDesigns: (view, newOrder) =>
+        set(
+          (state) => {
+            state.designsByView[view] = newOrder.map((design, index) => ({
+              ...design,
+              zIndex: index,
+            }));
+          },
+          false,
+          "reorderDesigns"
+        ),
+
+      updateDesignZIndex: (designId, newIndex) =>
+        set(
+          (state) => {
+            const designs = state.designsByView[state.activeView];
+            const design = designs.find((d) => d.id === designId);
+            if (design) {
+              design.zIndex = newIndex;
+              // Re-sort designs by zIndex
+              state.designsByView[state.activeView].sort(
+                (a, b) => a.zIndex - b.zIndex
+              );
+            }
+          },
+          false,
+          "updateDesignZIndex"
+        ),
+
+      updateDesignBlendMode: (designId, blendMode) =>
+        set(
+          (state) => {
+            const design = state.designsByView[state.activeView].find(
+              (d) => d.id === designId
+            );
+            if (design) {
+              design.blendMode = blendMode;
+            }
+          },
+          false,
+          "updateDesignBlendMode"
+        ),
+
+      updateDesignOpacity: (designId, opacity) =>
+        set(
+          (state) => {
+            const design = state.designsByView[state.activeView].find(
+              (d) => d.id === designId
+            );
+            if (design) {
+              design.opacity = opacity;
+            }
+          },
+          false,
+          "updateDesignOpacity"
+        ),
+
+      toggleDesignVisibility: (designId) =>
+        set(
+          (state) => {
+            const design = state.designsByView[state.activeView].find(
+              (d) => d.id === designId
+            );
+            if (design) {
+              design.visible = !design.visible;
+            }
+          },
+          false,
+          "toggleDesignVisibility"
+        ),
+      toggleDesignLock: (designId) =>
+        set(
+          (state) => {
+            const design = state.designsByView[state.activeView].find(
+              (d) => d.id === designId
+            );
+            if (design) {
+              design.locked = !design.locked;
+            }
+          },
+          false,
+          "toggleDesignLock"
         ),
     }))
   )

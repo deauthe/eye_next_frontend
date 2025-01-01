@@ -5,6 +5,7 @@ import { Toolbar } from '../Toolbar/Toolbar';
 import { Canvas } from '../Canvas/Canvas';
 import { TransformControls } from '../TransformControls/TransformControls';
 import { LayerPanel } from '../LayerPanel/LayerPanel';
+import { CurvatureControls } from '../CurvatureControls /CurvatureControls ';
 import { PositionGuide } from '../PositionGuide/PositionGuide';
 import { useEditor } from "../../store/editorStore";
 import { DesignsPanel } from '../DesignsPanel/DesignsPanel';
@@ -18,6 +19,8 @@ export const Editor: React.FC = () => {
             <div className="flex-1 flex gap-6 p-6">
                 <div className="w-64">
                     <TransformControls />
+                    <CurvatureControls />
+                    <LayerPanel />
                     <Toolbar />
                 </div>
 

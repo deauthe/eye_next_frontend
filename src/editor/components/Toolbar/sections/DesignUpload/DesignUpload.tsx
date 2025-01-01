@@ -11,7 +11,7 @@ import { useEditor } from "../../../../store/editorStore";
 import { validateDesignSize } from '../../../../utils/validation';
 import { calculateInitialScale, getImageDimensions } from '../../../../utils/designScaling';
 import { DESIGN_AREAS } from '../../../../hooks/useCanvas';
-import { Design } from '../../../../types/editor.types';
+import { Design, BlendMode } from '../../../../types/editor.types';
 
 export const DesignUpload: React.FC = () => {
     const {
@@ -23,9 +23,45 @@ export const DesignUpload: React.FC = () => {
 
     const { toast } = useToast();
 
+    const createNewDesign = (imageUrl: string, dimensions: { width: number; height: number }) => {
+        const designArea = DESIGN_AREAS[garmentType][activeView];
+        const initialScale = calculateInitialScale(
+            dimensions.width,
+            dimensions.height,
+            designArea.maxWidth,
+            designArea.maxHeight
+        );
+
+        const currentDesigns = designsByView[activeView];
+        const positionOffset = currentDesigns.length * 20;
+
+        return {
+            id: nanoid(),
+            imageUrl,
+            transform: {
+                scale: initialScale,
+                rotation: 0,
+                position: {
+                    x: designArea.left + (designArea.width / 2) + positionOffset,
+                    y: designArea.top + (designArea.height / 2) + positionOffset
+                }
+            },
+            visible: true,
+            locked: false,
+            opacity: 1,
+            blendMode: 'normal' as BlendMode,
+            zIndex: currentDesigns.length,
+            originalSize: dimensions,
+            name: `Design ${currentDesigns.length + 1}`
+        };
+    };
+
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
-        if (file) {
+        if (!file) return;
+
+        try {
+            // Validate file size
             const isValidSize = await validateDesignSize(file);
             if (!isValidSize) {
                 toast({
@@ -36,36 +72,15 @@ export const DesignUpload: React.FC = () => {
                 return;
             }
 
+            // Read the file
             const reader = new FileReader();
             reader.onload = async () => {
-                const imageUrl = reader.result as string;
                 try {
+                    const imageUrl = reader.result as string;
                     const dimensions = await getImageDimensions(imageUrl);
-                    const designArea = DESIGN_AREAS[garmentType][activeView];
-                    const initialScale = calculateInitialScale(
-                        dimensions.width,
-                        dimensions.height,
-                        designArea.maxWidth,
-                        designArea.maxHeight
-                    );
+                    const newDesign = createNewDesign(imageUrl, dimensions);
 
-                    const currentDesigns = designsByView[activeView];
-                    const positionOffset = currentDesigns.length * 20;
-
-                    const newDesign: Design = {
-                        id: nanoid(),
-                        imageUrl,
-                        transform: {
-                            scale: initialScale,
-                            rotation: 0,
-                            position: {
-                                x: designArea.left + (designArea.width / 2) + positionOffset,
-                                y: designArea.top + (designArea.height / 2) + positionOffset
-                            }
-                        },
-                        originalSize: dimensions
-                    };
-
+                    // Add the design
                     addDesign(newDesign);
 
                     toast({
@@ -82,9 +97,17 @@ export const DesignUpload: React.FC = () => {
                     });
                 }
             };
+
             reader.readAsDataURL(file);
+        } catch (error) {
+            console.error("Error handling file:", error);
+            toast({
+                title: "Error",
+                description: "Failed to upload the image",
+                variant: "destructive",
+            });
         }
-    }, [addDesign, toast, activeView, garmentType, designsByView]);
+    }, [addDesign, activeView, garmentType, designsByView, toast]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,

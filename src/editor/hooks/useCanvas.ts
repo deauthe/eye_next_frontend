@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { fabric } from "fabric";
 import { useEditor } from "../store/editorStore";
-import { ViewType } from "../types/editor.types";
+import { ViewType, Design } from "../types/editor.types";
 
 // Define mockup images for different views and garment types
 const MOCKUP_IMAGES = {
@@ -157,6 +157,36 @@ export const useCanvas = () => {
     mockup.applyFilters();
   };
 
+  //  function for blend modes
+  const applyBlendMode = (fabricObject: fabric.Image, design: Design) => {
+    // Set opacity
+    fabricObject.set("opacity", design.opacity || 1);
+
+    // Apply blend mode
+    const blendMode = design.blendMode || "normal";
+    let compositeOperation = "source-over";
+
+    switch (blendMode) {
+      case "multiply":
+        compositeOperation = "multiply";
+        break;
+      case "screen":
+        compositeOperation = "screen";
+        break;
+      case "overlay":
+        compositeOperation = "overlay";
+        break;
+      case "darken":
+        compositeOperation = "darken";
+        break;
+      case "lighten":
+        compositeOperation = "lighten";
+        break;
+    }
+
+    fabricObject.set("globalCompositeOperation", compositeOperation);
+  };
+
   const handleObjectModification = (obj: fabric.Image) => {
     if (!obj || isModifyingRef.current) return;
 
@@ -232,6 +262,11 @@ export const useCanvas = () => {
     const canvas = canvasRef.current;
     const currentDesigns = designsByView[activeView];
 
+    // Sort designs by zIndex (if available) or keep original order
+    const sortedDesigns = [...currentDesigns].sort(
+      (a, b) => (a.zIndex || 0) - (b.zIndex || 0)
+    );
+
     isModifyingRef.current = true;
     try {
       // Remove deleted designs
@@ -248,30 +283,32 @@ export const useCanvas = () => {
       objectsToRemove.forEach((obj) => {
         canvas.remove(obj);
       });
-
-      // Update existing designs and add new ones
-      currentDesigns.forEach((design) => {
+      // Update or add designs with blend modes
+      sortedDesigns.forEach((design, index) => {
         const existingObject = designRefsMap.current.get(design.id);
 
         if (existingObject) {
-          if (
-            existingObject.left !== design.transform.position.x ||
-            existingObject.top !== design.transform.position.y ||
-            existingObject.scaleX !== design.transform.scale ||
-            existingObject.angle !== design.transform.rotation
-          ) {
-            existingObject.set({
-              left: design.transform.position.x,
-              top: design.transform.position.y,
-              scaleX: design.transform.scale,
-              scaleY: design.transform.scale,
-              angle: design.transform.rotation,
-              originX: "center",
-              originY: "center",
-            });
-            existingObject.setCoords();
-          }
+          // Update existing design
+          existingObject.set({
+            left: design.transform.position.x,
+            top: design.transform.position.y,
+            scaleX: design.transform.scale,
+            scaleY: design.transform.scale,
+            angle: design.transform.rotation,
+            visible: design.visible !== false,
+            selectable: !design.locked,
+            evented: !design.locked,
+            originX: "center",
+            originY: "center",
+          });
+
+          applyBlendMode(existingObject, design);
+          existingObject.setCoords();
+
+          // Update z-index
+          canvas.moveTo(existingObject, index);
         } else {
+          // Add new design
           fabric.Image.fromURL(design.imageUrl, (img) => {
             if (!canvas || !isInitializedRef.current) return;
 
@@ -281,12 +318,17 @@ export const useCanvas = () => {
               scaleX: design.transform.scale,
               scaleY: design.transform.scale,
               angle: design.transform.rotation,
+              visible: design.visible !== false,
+              selectable: !design.locked,
+              evented: !design.locked,
               originX: "center",
               originY: "center",
             });
 
+            applyBlendMode(img, design);
             designRefsMap.current.set(design.id, img);
             canvas.add(img);
+            canvas.moveTo(img, index);
 
             if (design.id === activeDesignId) {
               canvas.setActiveObject(img);
@@ -302,6 +344,7 @@ export const useCanvas = () => {
       isModifyingRef.current = false;
     }
   };
+
   const loadMockup = (view: ViewType, type: string) => {
     const canvas = canvasRef.current;
     if (!canvas || !isInitializedRef.current) return;
