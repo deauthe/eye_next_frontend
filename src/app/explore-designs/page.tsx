@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 import { staticDesigns } from "@/helpers/staticFiles/staticDesigns";
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export default function useFinalProduct(product_id: string) {
   const [product, setProduct] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);

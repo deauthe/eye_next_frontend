@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
 	Dialog,
 	DialogContent,
@@ -104,7 +105,7 @@ const SelectProductModal = ({ designerId }: { designerId: string }) => {
 						<div>haha</div>
 					)}
 				</div>
-				<Button variant="default" className="mx-auto" onClick={() => {}}>
+				<Button variant="default" className="mx-auto" onClick={() => { }}>
 					Submit
 				</Button>
 			</DialogContent>

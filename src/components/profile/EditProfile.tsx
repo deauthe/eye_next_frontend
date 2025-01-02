@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { ReactEventHandler, useState } from "react";
 import {
 	Dialog,

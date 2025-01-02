@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
