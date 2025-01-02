@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	reactStrictMode: true,
+
+  reactStrictMode: true,
+  webpack: (config) => {
+    config.externals = [...config.externals, { canvas: "canvas" }]; // Handle canvas module
+    return config;
+  },
+
+
 	images: {
 		domains: [
 			"res.cloudinary.com",
@@ -8,6 +15,7 @@ const nextConfig = {
 			"source.unsplash.com",
 		],
 	},
+
 };
 
 export default nextConfig;
