@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import { EditorCommand } from "../types/command.types";
-import { useHistoryPanel } from "./useHistoryPanel";
 
 interface EditorHistory {
   undoStack: EditorCommand[];
   redoStack: EditorCommand[];
+  maxHistorySize: number;
   addCommand: (command: EditorCommand) => void;
   undo: () => void;
   redo: () => void;
@@ -16,22 +16,25 @@ interface EditorHistory {
 export const useEditorHistory = create<EditorHistory>((set, get) => ({
   undoStack: [],
   redoStack: [],
+  maxHistorySize: 20, // Keep last 20 commands
 
   addCommand: (command: EditorCommand) => {
     // Execute the command
     command.execute();
 
-    // Add to history panel
-    useHistoryPanel.getState().addSnapshot({
-      description: command.description,
-      type: command.batchId ? "batch" : "single",
-    });
+    set((state) => {
+      const newUndoStack = [...state.undoStack, command];
+      
+      // Limit the undo stack size
+      if (newUndoStack.length > state.maxHistorySize) {
+        newUndoStack.shift(); // Remove oldest command
+      }
 
-    // Update the stacks
-    set((state) => ({
-      undoStack: [...state.undoStack, command],
-      redoStack: [], // Clear redo stack when new command is added
-    }));
+      return {
+        undoStack: newUndoStack,
+        redoStack: [], // Clear redo stack when new command is added
+      };
+    });
   },
 
   undo: () => {
@@ -41,14 +44,10 @@ export const useEditorHistory = create<EditorHistory>((set, get) => ({
     const command = undoStack[undoStack.length - 1];
     command.undo();
 
-    set({
-      undoStack: undoStack.slice(0, -1),
-      redoStack: [...redoStack, command],
-    });
-
-    // Update history panel
-    const { currentIndex } = useHistoryPanel.getState();
-    useHistoryPanel.getState().goToSnapshot(Math.max(0, currentIndex - 1));
+    set((state) => ({
+      undoStack: state.undoStack.slice(0, -1),
+      redoStack: [...state.redoStack, command].slice(-state.maxHistorySize),
+    }));
   },
 
   redo: () => {
@@ -58,23 +57,14 @@ export const useEditorHistory = create<EditorHistory>((set, get) => ({
     const command = redoStack[redoStack.length - 1];
     command.execute();
 
-    set({
-      undoStack: [...undoStack, command],
-      redoStack: redoStack.slice(0, -1),
-    });
-
-    // Update history panel
-    const { currentIndex, snapshots } = useHistoryPanel.getState();
-    useHistoryPanel
-      .getState()
-      .goToSnapshot(Math.min(snapshots.length - 1, currentIndex + 1));
+    set((state) => ({
+      undoStack: [...state.undoStack, command].slice(-state.maxHistorySize),
+      redoStack: state.redoStack.slice(0, -1),
+    }));
   },
 
   canUndo: () => get().undoStack.length > 0,
   canRedo: () => get().redoStack.length > 0,
 
-  clear: () => {
-    set({ undoStack: [], redoStack: [] });
-    useHistoryPanel.getState().clear();
-  },
+  clear: () => set({ undoStack: [], redoStack: [] }),
 }));

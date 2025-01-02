@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Header from "@/components/Header/Header";
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "../store/provider";
@@ -20,8 +19,7 @@ export default function EditorLayout({
         <html lang="en">
             <body className={inter.className}>
                 <Providers>
-                    <Header />
-                    <div className="mt-24">{children}</div>
+                    {children}
                     <Toaster />
                 </Providers>
             </body>

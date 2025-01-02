@@ -2,8 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { fabric } from "fabric";
+import { CurvatureFilter } from "../filters/CurvatureFilter";
 import { useEditor } from "../store/editorStore";
 import { ViewType, Design } from "../types/editor.types";
+
+// Register the custom filter with fabric.js
+fabric.Image.filters.Curvature = CurvatureFilter;
 
 // Define mockup images for different views and garment types
 const MOCKUP_IMAGES = {
@@ -157,6 +161,52 @@ export const useCanvas = () => {
     mockup.applyFilters();
   };
 
+  const applyCurvatureToObject = (
+    fabricObject: fabric.Image,
+    design: Design
+  ) => {
+    if (!design.curvature?.enabled) {
+      fabricObject.filters =
+        fabricObject.filters?.filter((f) => f.type !== "Curvature") || [];
+      fabricObject.applyFilters();
+      return;
+    }
+
+    // Find existing curvature filter or create new one
+    let curvatureFilter = fabricObject.filters?.find(
+      (f) => f instanceof CurvatureFilter
+    ) as CurvatureFilter;
+
+    if (!curvatureFilter) {
+      curvatureFilter = new CurvatureFilter({
+        intensity: design.curvature.intensity,
+        direction: design.curvature.direction,
+        perspective: design.curvature.perspective,
+        waveform: design.curvature.waveform,
+        adaptiveEdges: design.curvature.adaptiveEdges,
+        meshDensity: design.curvature.meshDensity,
+      });
+
+      // Add to filters array
+      if (!fabricObject.filters) {
+        fabricObject.filters = [];
+      }
+      fabricObject.filters.push(curvatureFilter);
+    } else {
+      // Update existing filter
+      Object.assign(curvatureFilter, {
+        intensity: design.curvature.intensity,
+        direction: design.curvature.direction,
+        perspective: design.curvature.perspective,
+        waveform: design.curvature.waveform,
+        adaptiveEdges: design.curvature.adaptiveEdges,
+        meshDensity: design.curvature.meshDensity,
+      });
+    }
+
+    fabricObject.applyFilters();
+  };
+
   //  function for blend modes
   const applyBlendMode = (fabricObject: fabric.Image, design: Design) => {
     // Set opacity
@@ -265,6 +315,49 @@ export const useCanvas = () => {
     canvas.on("object:moving", handleTransform);
   };
 
+  const renderView = async (view: ViewType): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      try {
+        if (!canvasRef.current) {
+          reject(new Error("Canvas not initialized"));
+          return;
+        }
+
+        const canvas = canvasRef.current;
+
+        // Store current view state
+        const currentView = activeView;
+        const currentDesigns = [...designsByView[currentView]];
+
+        // Switch to requested view
+        loadMockup(view, garmentType);
+
+        // Wait for mockup to load
+        setTimeout(() => {
+          try {
+            // Update canvas with designs for this view
+            updateCanvasObjects();
+
+            // Render the canvas
+            canvas.renderAll();
+
+            // Restore original view
+            loadMockup(currentView, garmentType);
+            setTimeout(() => {
+              updateCanvasObjects();
+              canvas.renderAll();
+              resolve();
+            }, 100);
+          } catch (error) {
+            reject(error);
+          }
+        }, 100);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
   const updateCanvasObjects = () => {
     if (
       !canvasRef.current ||
@@ -322,6 +415,9 @@ export const useCanvas = () => {
             opacity: design.opacity || 1,
           });
 
+          // Apply curvature filter
+          applyCurvatureToObject(existingObject, design);
+
           applyBlendMode(existingObject, design);
           existingObject.setCoords();
 
@@ -346,6 +442,9 @@ export const useCanvas = () => {
               originY: "center",
               opacity: design.opacity || 1,
             });
+
+            // Apply curvature filter
+            applyCurvatureToObject(img, design);
 
             applyBlendMode(img, design);
             designRefsMap.current.set(design.id, img);
@@ -431,8 +530,8 @@ export const useCanvas = () => {
 
     try {
       const canvas = new fabric.Canvas(htmlCanvas, {
-        width: 600,
-        height: 800,
+        width: 500,
+        height: 600,
         backgroundColor: "#f5f5f5",
       });
 
@@ -500,6 +599,7 @@ export const useCanvas = () => {
 
   return {
     initCanvas,
+    renderView,
     cleanupCanvas: () => {},
     canvasRef,
   };

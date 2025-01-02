@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEditor } from "../../store/editorStore";
+import { useEditorCommands } from "../../hooks/useEditorCommands";
 
 export const TransformControls: React.FC = () => {
     const {
@@ -13,6 +14,8 @@ export const TransformControls: React.FC = () => {
         activeView,
         updateDesignTransform
     } = useEditor();
+
+    const { handleTransform } = useEditorCommands();
 
     // Get the active design
     const design = activeDesignId
@@ -33,10 +36,16 @@ export const TransformControls: React.FC = () => {
         updateDesignTransform(design.id, {
             scale: value[0] / 100
         });
+        handleTransform(design.id, {
+            scale: value[0] / 100
+        });
     };
 
     const handleRotationChange = (value: number[]) => {
         updateDesignTransform(design.id, {
+            rotation: value[0]
+        });
+        handleTransform(design.id, {
             rotation: value[0]
         });
     };

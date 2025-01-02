@@ -1,3 +1,5 @@
+import { CurvatureFilter } from "../filters/CurvatureFilter";
+
 export type ViewType = "front" | "back" | "shoulder";
 export type BlendMode =
   | "normal"
@@ -33,11 +35,7 @@ export interface Design {
     height: number;
   };
   // New properties for curved surface mapping
-  curvature?: {
-    enabled: boolean;
-    intensity: number;
-    direction: "horizontal" | "vertical";
-  };
+  curvature?: CurvatureSettings;
 }
 
 export interface DesignsByView {
@@ -55,4 +53,26 @@ export interface EditorState {
   activeDesignId: string | null;
   isDragging: boolean;
   isEditing: boolean;
+}
+
+export interface CurvatureSettings {
+  enabled: boolean;
+  intensity: number;
+  direction: "horizontal" | "vertical" | "radial" | "custom";
+  perspective: number;
+  waveform: "sine" | "quad" | "cubic" | "custom";
+  adaptiveEdges: boolean;
+  meshDensity: number;
+}
+
+declare module "fabric/fabric-impl" {
+  namespace fabric {
+    interface IImageFilters {
+      Curvature: typeof CurvatureFilter;
+    }
+
+    interface Image {
+      filters?: (IBaseFilter | CurvatureFilter)[];
+    }
+  }
 }
