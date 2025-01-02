@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useEditor } from '../../store/editorStore';
 import { Card } from '@/components/ui/card';
 
 interface ExportModalProps {
