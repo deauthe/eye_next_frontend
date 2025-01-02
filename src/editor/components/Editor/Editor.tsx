@@ -18,10 +18,11 @@ export const Editor: React.FC = () => {
             {/* Main Editor Area */}
             <div className="flex-1 flex gap-6 p-6">
                 <div className="w-64">
+                    <Toolbar />
                     <TransformControls />
                     <CurvatureControls />
                     <LayerPanel />
-                    <Toolbar />
+
                 </div>
 
                 <div className="flex-1">

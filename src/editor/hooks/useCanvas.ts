@@ -160,7 +160,7 @@ export const useCanvas = () => {
   //  function for blend modes
   const applyBlendMode = (fabricObject: fabric.Image, design: Design) => {
     // Set opacity
-    fabricObject.set("opacity", design.opacity || 1);
+    const currentOpacity = design.opacity ?? 1;
 
     // Apply blend mode
     const blendMode = design.blendMode || "normal";
@@ -184,7 +184,10 @@ export const useCanvas = () => {
         break;
     }
 
-    fabricObject.set("globalCompositeOperation", compositeOperation);
+    fabricObject.set({
+      globalCompositeOperation: compositeOperation,
+      opacity: currentOpacity,
+    });
   };
 
   const handleObjectModification = (obj: fabric.Image) => {
@@ -229,6 +232,17 @@ export const useCanvas = () => {
     canvas.on("selection:cleared", () => {
       if (!isModifyingRef.current) {
         setActiveDesign(null);
+        // Ensure all designs remain visible after deselection
+        designsByView[activeView].forEach((design) => {
+          const obj = designRefsMap.current.get(design.id);
+          if (obj) {
+            obj.set({
+              opacity: design.opacity || 1,
+              visible: design.visible !== false,
+            });
+          }
+        });
+        canvas.renderAll();
       }
     });
 
@@ -283,6 +297,11 @@ export const useCanvas = () => {
       objectsToRemove.forEach((obj) => {
         canvas.remove(obj);
       });
+      // Ensure mockup stays at the bottom
+      if (mockupRef.current) {
+        canvas.sendToBack(mockupRef.current);
+      }
+
       // Update or add designs with blend modes
       sortedDesigns.forEach((design, index) => {
         const existingObject = designRefsMap.current.get(design.id);
@@ -300,13 +319,15 @@ export const useCanvas = () => {
             evented: !design.locked,
             originX: "center",
             originY: "center",
+            opacity: design.opacity || 1,
           });
 
           applyBlendMode(existingObject, design);
           existingObject.setCoords();
 
-          // Update z-index
-          canvas.moveTo(existingObject, index);
+          // Ensure design stays above mockup
+          existingObject.bringToFront();
+          canvas.bringForward(existingObject, true);
         } else {
           // Add new design
           fabric.Image.fromURL(design.imageUrl, (img) => {
@@ -323,12 +344,17 @@ export const useCanvas = () => {
               evented: !design.locked,
               originX: "center",
               originY: "center",
+              opacity: design.opacity || 1,
             });
 
             applyBlendMode(img, design);
             designRefsMap.current.set(design.id, img);
             canvas.add(img);
             canvas.moveTo(img, index);
+
+            // Ensure new design stays above mockup
+            img.bringToFront();
+            canvas.bringForward(img, true);
 
             if (design.id === activeDesignId) {
               canvas.setActiveObject(img);
@@ -377,6 +403,7 @@ export const useCanvas = () => {
         objects.forEach((obj) => canvas.remove(obj));
 
         canvas.add(img);
+        canvas.sendToBack(img);
         img.moveTo(0);
 
         // Re-add all designs
@@ -384,6 +411,7 @@ export const useCanvas = () => {
           const designObject = designRefsMap.current.get(design.id);
           if (designObject) {
             canvas.add(designObject);
+            designObject.bringToFront();
             if (design.id === activeDesignId) {
               canvas.setActiveObject(designObject);
             }
