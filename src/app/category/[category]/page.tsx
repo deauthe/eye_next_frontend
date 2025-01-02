@@ -1,18 +1,20 @@
 "use client";
-import { staticProducts } from "@/components/categoryPage/staticProducts";
-import ProductCard from "@/components/mainComponents/ProductCard";
-import { ProductDetails } from "@/components/ProductPage/ProductDetails";
-import { getProduct } from "@/helpers/api/productApis";
-import { useProduct } from "@/hooks/useProduct";
-import { cn } from "@/lib/utils";
+import { staticProducts } from "@/helpers/staticFiles/staticProducts";
+import { ProductCard } from "@/components/mainComponents/ProductCard";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
-import Link from "next/link";
-import { useState } from "react";
 import HeroBanner from "@/components/Home/HeroBanner";
+import { PageType, ProductCardProps } from "@/types/types";
+import { useState } from "react";
 
 export default function Page({ params }: { params: { category: string } }) {
 	const category = params.category;
+	const [page, setPage] = useState<PageType>({
+		currentPage: 0,
+		totalPages: 10,
+	});
+	const [products, setProducts] = useState<ProductCardProps>();
+	const loadMoreProducts = () => {};
+
 	return (
 		<div>
 			<div>
@@ -42,9 +44,12 @@ export default function Page({ params }: { params: { category: string } }) {
 					<div className="border-[1px] w-[200px] rounded-full h-2 border-black/[0.3] mx-auto bg-transparent">
 						<div className="bg-black/[0.6] rounded-full w-1/2 h-full"></div>
 					</div>
-					<Button className="bg-gray-800 text-white rounded-full">
+					<button
+						onClick={loadMoreProducts}
+						className="du-btn du-btn-secondary rounded-full "
+					>
 						load more products
-					</Button>
+					</button>
 				</div>
 			</div>
 		</div>

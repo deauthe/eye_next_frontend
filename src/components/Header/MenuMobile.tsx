@@ -30,7 +30,11 @@ interface MenuMobileProps {
 const data: MenuItem[] = [
 	{ id: 1, name: "Deals", url: "/" },
 	{ id: 2, name: "What's New", url: "/about" },
-	{ id: 3, name: "Categories", subMenu: true },
+	{ id: 3, name: "WishList", url: "/auth/login" },
+	{ id: 4, name: "Cart", url: "/auth/signup" },
+	{ id: 5, name: "Categories", subMenu: true },
+	{ id: 6, name: "dashboard", url: "/dashboard" },
+	{ id: 7, name: "profile", url: "/profile" },
 ];
 
 const MenuMobile: React.FC<MenuMobileProps> = ({
